@@ -1,0 +1,10 @@
+{
+  "note": "Local-only seed template. Copy to users.local.json if you want to keep bootstrap users outside Git. Never store plain text passwords.",
+  "users": [
+    {
+      "email": "admin@lucrooculto.local",
+      "passwordHash": "$2b$12$replace-with-bcrypt-hash",
+      "role": "owner"
+    }
+  ]
+}

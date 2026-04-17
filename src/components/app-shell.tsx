@@ -1,0 +1,41 @@
+import Link from "next/link";
+import { signOut } from "@/app/actions";
+import type { Organization } from "@/lib/types";
+
+export function AppShell({
+  organization,
+  children
+}: {
+  organization: Organization;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="app-layout">
+      <aside className="sidebar">
+        <Link className="brand" href="/dashboard">
+          <span className="brand-mark">LO</span>
+          <span>Lucro Oculto</span>
+        </Link>
+
+        <nav className="nav" aria-label="Navegacao principal">
+          <Link href="/dashboard">Diagnostico</Link>
+          <Link href="/dashboard/import">Importar CSV</Link>
+          <Link href="/dashboard/clients">Clientes</Link>
+          <Link href="/dashboard/settings">Ajustes</Link>
+          <Link href="/admin">Admin beta</Link>
+          <form action={signOut}>
+            <button type="submit">Sair</button>
+          </form>
+        </nav>
+
+        <p className="muted" style={{ marginTop: 28 }}>
+          {organization.name}
+          <br />
+          Plano {organization.plan}
+        </p>
+      </aside>
+
+      <main className="app-main">{children}</main>
+    </div>
+  );
+}
