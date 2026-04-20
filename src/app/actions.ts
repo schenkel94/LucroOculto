@@ -12,6 +12,19 @@ function cleanPassword(formData: FormData) {
   return String(formData.get("password") ?? "");
 }
 
+async function getAuthRedirectUrl() {
+  const headerOrigin = (await headers()).get("origin");
+  const configuredUrl =
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+    process.env.VERCEL_URL ??
+    headerOrigin ??
+    "http://localhost:3000";
+  const origin = configuredUrl.startsWith("http") ? configuredUrl : `https://${configuredUrl}`;
+
+  return `${origin.replace(/\/$/, "")}/auth/callback`;
+}
+
 export async function signIn(formData: FormData) {
   const supabase = await createClient();
   const email = cleanEmail(formData);
@@ -31,9 +44,9 @@ export async function signIn(formData: FormData) {
 
 export async function signUp(formData: FormData) {
   const supabase = await createClient();
-  const origin = (await headers()).get("origin") ?? process.env.NEXT_PUBLIC_APP_URL;
   const email = cleanEmail(formData);
   const password = cleanPassword(formData);
+  const emailRedirectTo = await getAuthRedirectUrl();
 
   if (password.length < 8) {
     redirect(`/login?message=${encodeURIComponent("Use uma senha com pelo menos 8 caracteres.")}`);
@@ -43,7 +56,7 @@ export async function signUp(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${origin}/auth/callback`
+      emailRedirectTo
     }
   });
 
@@ -58,6 +71,32 @@ export async function signUp(formData: FormData) {
   }
 
   redirect("/dashboard");
+}
+
+export async function resendConfirmation(formData: FormData) {
+  const supabase = await createClient();
+  const email = cleanEmail(formData);
+  const emailRedirectTo = await getAuthRedirectUrl();
+
+  if (!email) {
+    redirect(`/login?message=${encodeURIComponent("Informe o email para reenviar a confirmacao.")}`);
+  }
+
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: {
+      emailRedirectTo
+    }
+  });
+
+  if (error) {
+    redirect(`/login?message=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect(
+    `/login?message=${encodeURIComponent("Enviamos um novo email de confirmacao. Use o link mais recente.")}`
+  );
 }
 
 export async function signOut() {

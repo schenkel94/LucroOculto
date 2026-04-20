@@ -36,8 +36,10 @@ No MVP, use email e senha pelo Supabase Auth. Para testes rapidos, no painel do 
 URLs de redirect sugeridas:
 
 ```txt
-http://localhost:3000/**
+https://seu-dominio.vercel.app/auth/callback
 https://seu-dominio.vercel.app/**
+https://*-sua-conta-vercel.vercel.app/**
+http://localhost:3000/**
 ```
 
 ## CSV esperado

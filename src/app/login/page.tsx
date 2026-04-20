@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { signIn, signUp } from "@/app/actions";
+import { resendConfirmation, signIn, signUp } from "@/app/actions";
 
 export default async function LoginPage({
   searchParams
@@ -59,6 +59,22 @@ export default async function LoginPage({
             </div>
             <button className="button-secondary" type="submit">
               Criar conta
+            </button>
+          </form>
+
+          <form className="form-grid" action={resendConfirmation}>
+            <h2 style={{ margin: 0 }}>Reenviar confirmacao</h2>
+            <p className="muted">
+              Use quando o link antigo foi para localhost ou expirou.
+            </p>
+            <div className="field">
+              <label className="label" htmlFor="resend-email">
+                Email
+              </label>
+              <input id="resend-email" type="email" name="email" required />
+            </div>
+            <button className="button-secondary" type="submit">
+              Reenviar email
             </button>
           </form>
         </div>
