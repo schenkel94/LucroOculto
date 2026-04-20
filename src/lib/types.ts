@@ -3,6 +3,7 @@ export type Organization = {
   owner_user_id: string;
   name: string;
   plan: string;
+  is_founder: boolean;
   billing_status: string;
   billing_email: string | null;
   billing_notes: string | null;

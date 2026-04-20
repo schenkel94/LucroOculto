@@ -1,220 +1,180 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { CopyButton } from "@/components/copy-button";
-import { calculateDiagnoses } from "@/lib/calculations";
-import { getDashboardData } from "@/lib/data";
-import { formatCurrency } from "@/lib/format";
-import { getSetupStatus } from "@/lib/setup-status";
+import { BetaRequestForm } from "@/components/forms";
+import { getBillingEvents, getDashboardData } from "@/lib/data";
+import { formatCurrency, formatNumber } from "@/lib/format";
+import {
+  formatLimit,
+  getBillingStatusLabel,
+  getUsageStatus,
+  PLAN_DEFINITIONS
+} from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
-type LaunchItem = {
-  label: string;
-  detail: string;
-  ok: boolean;
-};
-
 export default async function LaunchPage() {
-  const [{ organization, clients, entries }, setup] = await Promise.all([
-    getDashboardData(),
-    getSetupStatus()
-  ]);
-  const diagnoses = calculateDiagnoses(clients, entries, {
-    hourlyCost: organization.hourly_cost,
-    targetMargin: organization.target_margin,
-    reworkFactor: organization.rework_factor,
-    urgencyFactor: organization.urgency_factor,
-    lateDailyPenalty: organization.late_daily_penalty
-  });
-  const worstDiagnosis = diagnoses[0];
-  const launchPitch = buildLaunchPitch(worstDiagnosis?.clientName);
-  const checklist = buildChecklist({
-    clientCount: clients.length,
-    entriesCount: entries.length,
-    hasSetup: setup.ok,
-    hasDecision: Boolean(worstDiagnosis)
-  });
-  const doneCount = checklist.filter((item) => item.ok).length;
-  const readiness = Math.round((doneCount / checklist.length) * 100);
+  const { organization, user, clients, entries, imports } = await getDashboardData();
+  const billingEvents = await getBillingEvents(organization.id);
+  const usage = getUsageStatus({ organization, clientsCount: clients.length, imports });
+  const hasOpenRequest = billingEvents.some(
+    (event) => event.event_type === "beta_requested" && event.status === "open"
+  );
+  const hasPaidAccess = organization.plan !== "free" || organization.billing_status === "active";
+  const effectiveBillingStatus =
+    organization.billing_status === "trial" && hasOpenRequest
+      ? "requested"
+      : organization.billing_status;
 
   return (
     <AppShell organization={organization}>
       <div className="topbar">
         <div className="page-title">
-          <h1>Polimento, seguranca e lancamento</h1>
+          <h1>Planos do Lucro Oculto</h1>
           <p>
-            O minimo para chamar beta pago sem parecer improviso: setup limpo,
-            demo convincente, decisao clara e proxima acao pronta.
+            Comece no Free, prove a dor com poucos clientes e libere o beta
+            pago quando a carteira real pedir mais volume.
           </p>
         </div>
-        <Link className="button" href="/admin">
-          Ver planos
+        <Link className="button-secondary" href="/dashboard">
+          Voltar ao diagnostico
         </Link>
       </div>
 
       <section className="dashboard-grid">
         <div className="metric">
-          <span>Prontidao</span>
-          <strong>{readiness}%</strong>
-          <small>{doneCount} de {checklist.length} itens fechados.</small>
+          <span>Plano atual</span>
+          <strong>{usage.plan.name}</strong>
+          <small>{getBillingStatusLabel(effectiveBillingStatus)}</small>
         </div>
         <div className="metric">
           <span>Clientes</span>
-          <strong>{clients.length}</strong>
-          <small>Meta de demo: pelo menos 3.</small>
+          <strong>
+            {clients.length}/{formatLimit(usage.clients.limit)}
+          </strong>
+          <small>Carteira carregada no workspace.</small>
+        </div>
+        <div className="metric">
+          <span>Imports no mes</span>
+          <strong>
+            {usage.imports.used}/{formatLimit(usage.imports.limit)}
+          </strong>
+          <small>CSV recorrente e sinal de plano pago.</small>
         </div>
         <div className="metric">
           <span>Lancamentos</span>
-          <strong>{entries.length}</strong>
-          <small>Precisa de dado para vender decisao.</small>
-        </div>
-        <div className="metric">
-          <span>Pior caso</span>
-          <strong>{worstDiagnosis ? formatCurrency(worstDiagnosis.profit) : "-"}</strong>
-          <small>{worstDiagnosis?.clientName ?? "Ainda sem diagnostico."}</small>
+          <strong>{formatNumber(entries.length)}</strong>
+          <small>Dados analisados pelo motor.</small>
         </div>
       </section>
 
       <section className="section" style={{ paddingBottom: 0 }}>
-        <div className="two-column">
-          <div className="panel">
-            <h2 style={{ marginTop: 0 }}>Checklist de go-live</h2>
-            <div className="launch-checklist">
-              {checklist.map((item) => (
-                <div className="launch-item" key={item.label}>
-                  <span className={item.ok ? "setup-dot ok" : "setup-dot warn"} />
-                  <div>
-                    <strong>{item.label}</strong>
-                    <p className="muted">{item.detail}</p>
+        <div className="section-heading">
+          <h2>Escolha pelo momento da operacao</h2>
+          <p>
+            Nao vendemos tela bonita. Vendemos a decisao que tira cliente ruim
+            da agenda, sustenta reajuste e protege margem.
+          </p>
+        </div>
+
+        <div className="plan-grid">
+          {PLAN_DEFINITIONS.map((plan) => {
+            const isCurrent = plan.key === usage.plan.key;
+            const isComingSoon = plan.key === "pro";
+            const ctaHref = isCurrent
+              ? "/dashboard"
+              : isComingSoon
+                ? "mailto:schenkel.mario@hotmail.com?subject=Lista Pro Lucro Oculto"
+                : "#beta";
+            const ctaClassName = isComingSoon || isCurrent ? "button-secondary" : "button";
+
+            return (
+              <article className="plan-card" key={plan.key}>
+                <div className="plan-card-head">
+                  <span className="badge observar">{plan.badge}</span>
+                  {isCurrent ? <span className="plan-current">Atual</span> : null}
+                </div>
+                <h3>{plan.name}</h3>
+                <strong>{plan.price === 0 ? "R$ 0" : `${formatCurrency(plan.price)}/mes`}</strong>
+                <p className="muted">{plan.description}</p>
+                <div className="limit-list">
+                  <div className="limit-row">
+                    <span>Clientes</span>
+                    <strong>{formatLimit(plan.limits.clients)}</strong>
+                  </div>
+                  <div className="limit-row">
+                    <span>Imports/mes</span>
+                    <strong>{formatLimit(plan.limits.importsPerMonth)}</strong>
+                  </div>
+                  <div className="limit-row">
+                    <span>Relatorios</span>
+                    <strong>{formatLimit(plan.limits.decisionReports)}</strong>
                   </div>
                 </div>
-              ))}
+                <ul className="plain-list">
+                  {plan.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+                <a className={ctaClassName} href={ctaHref}>
+                  {isCurrent ? "Plano atual" : plan.cta}
+                </a>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="section" id="beta" style={{ paddingBottom: 0 }}>
+        <div className="two-column">
+          <div className="panel">
+            <h2 style={{ marginTop: 0 }}>Liberar beta pago</h2>
+            <p className="muted">
+              O beta e manual de proposito: voce pede acesso, a gente confirma
+              pagamento por fora e libera o plano. Menos friccao, mais conversa
+              com cliente real.
+            </p>
+            <div className="billing-status">
+              <div>
+                <span>Status</span>
+                <strong>{getBillingStatusLabel(effectiveBillingStatus)}</strong>
+              </div>
+              <div>
+                <span>Vencimento</span>
+                <strong>{organization.paid_until ?? "Nao liberado"}</strong>
+              </div>
             </div>
-            <div className="actions">
-              <Link className="button-secondary" href="/setup">
-                Checar setup
-              </Link>
-              <Link className="button-secondary" href="/dashboard">
-                Abrir diagnostico
-              </Link>
-            </div>
+            <BetaRequestForm
+              defaultEmail={organization.billing_email ?? user.email}
+              disabled={hasOpenRequest || hasPaidAccess}
+            />
           </div>
 
           <aside className="panel">
-            <h2 style={{ marginTop: 0 }}>Mensagem de beta</h2>
-            <p className="muted">
-              Convite curto para mandar no WhatsApp, LinkedIn ou email. Venda
-              uma decisao, nao uma ferramenta.
-            </p>
-            <pre className="sql-box">{launchPitch}</pre>
-            <div className="actions">
-              <CopyButton label="Copiar mensagem" text={launchPitch} />
+            <h2 style={{ marginTop: 0 }}>Quando o Beta pago faz sentido</h2>
+            <div className="decision-options">
+              <div>
+                <strong>Voce tem mais de 3 clientes</strong>
+                <p className="muted">
+                  O Free prova o metodo. O Beta deixa analisar a carteira real.
+                </p>
+              </div>
+              <div>
+                <strong>Voce importa CSV mais de uma vez por mes</strong>
+                <p className="muted">
+                  Recorrencia mostra que a ferramenta entrou na rotina.
+                </p>
+              </div>
+              <div>
+                <strong>Voce vai usar relatorio com cliente</strong>
+                <p className="muted">
+                  O ganho aparece quando o diagnostico vira conversa de reajuste,
+                  escopo ou corte.
+                </p>
+              </div>
             </div>
           </aside>
         </div>
       </section>
-
-      <section className="section" style={{ paddingBottom: 0 }}>
-        <div className="launch-steps">
-          <div>
-            <span>1</span>
-            <strong>Fechar setup</strong>
-            <p className="muted">
-              Rode o schema completo no Supabase ate o setup ficar verde.
-            </p>
-          </div>
-          <div>
-            <span>2</span>
-            <strong>Carregar carteira real</strong>
-            <p className="muted">
-              Use 3 a 10 clientes. Se nao tiver CSV pronto, cadastre manualmente.
-            </p>
-          </div>
-          <div>
-            <span>3</span>
-            <strong>Abrir o pior relatorio</strong>
-            <p className="muted">
-              O primeiro print precisa mostrar prejuizo, margem ou caos de agenda.
-            </p>
-          </div>
-          <div>
-            <span>4</span>
-            <strong>Cobrar beta fundador</strong>
-            <p className="muted">
-              R$ 97 por 30 dias, liberacao manual e feedback direto.
-            </p>
-          </div>
-        </div>
-      </section>
     </AppShell>
   );
-}
-
-function buildChecklist({
-  clientCount,
-  entriesCount,
-  hasDecision,
-  hasSetup
-}: {
-  clientCount: number;
-  entriesCount: number;
-  hasDecision: boolean;
-  hasSetup: boolean;
-}): LaunchItem[] {
-  return [
-    {
-      label: "Supabase e env",
-      detail: hasSetup
-        ? "Schema e variaveis conferidos."
-        : "Rode o schema completo e revise as variaveis na Vercel.",
-      ok: hasSetup
-    },
-    {
-      label: "Base demonstravel",
-      detail: clientCount >= 3
-        ? "Carteira minima pronta para mostrar."
-        : "Carregue pelo menos 3 clientes para a demo fazer sentido.",
-      ok: clientCount >= 3
-    },
-    {
-      label: "Dados operacionais",
-      detail: entriesCount > 0
-        ? "Ha lancamentos para calcular margem."
-        : "Importe CSV ou lance dados manuais antes de vender.",
-      ok: entriesCount > 0
-    },
-    {
-      label: "Decisao comercial",
-      detail: hasDecision
-        ? "Ja existe cliente priorizado para relatorio."
-        : "O diagnostico precisa apontar um cliente antes da venda.",
-      ok: hasDecision
-    },
-    {
-      label: "Seguranca basica",
-      detail: "Headers, CSP, bloqueio de probes comuns e RLS no Supabase.",
-      ok: true
-    },
-    {
-      label: "Oferta beta",
-      detail: "R$ 97 por 30 dias, suporte fundador e liberacao manual.",
-      ok: true
-    }
-  ];
-}
-
-function buildLaunchPitch(clientName?: string) {
-  const example = clientName
-    ? `No meu teste, o primeiro caso critico foi ${clientName}.`
-    : "Em 10 minutos da para sair com o primeiro cliente critico.";
-
-  return `Estou abrindo o beta fundador do Lucro Oculto.
-
-Ele pega uma planilha simples de clientes, horas, chamados e descontos, e mostra quem esta queimando margem.
-
-${example}
-
-A ideia e direta: achar reajuste, limite de escopo ou cliente que precisa sair da carteira.
-
-Beta fundador: R$ 97 por 30 dias, com meu suporte direto para interpretar o primeiro diagnostico.`;
 }

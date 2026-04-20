@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { DiagnosisExplainer } from "@/components/diagnosis-explainer";
 import { MetricCard } from "@/components/metric-card";
+import { OnboardingGuide } from "@/components/onboarding-guide";
 import { PeriodFilter } from "@/components/period-filter";
 import { SeedDemoButton } from "@/components/forms";
 import { StatusBadge } from "@/components/status-badge";
@@ -9,6 +10,8 @@ import { calculateDiagnoses } from "@/lib/calculations";
 import { getDashboardData } from "@/lib/data";
 import { formatCurrency, formatNumber, formatPercent } from "@/lib/format";
 import { filterEntriesByPeriod, normalizePeriod, periodLabel } from "@/lib/periods";
+import { getPlanDefinition } from "@/lib/plans";
+import { getSetupStatus } from "@/lib/setup-status";
 
 export default async function DashboardPage({
   searchParams
@@ -18,7 +21,11 @@ export default async function DashboardPage({
   const { period: periodParam } = await searchParams;
   const activePeriod = normalizePeriod(periodParam);
   const activePeriodLabel = periodLabel(activePeriod);
-  const { organization, clients, entries } = await getDashboardData();
+  const [{ organization, clients, entries }, setup] = await Promise.all([
+    getDashboardData(),
+    getSetupStatus()
+  ]);
+  const plan = getPlanDefinition(organization.plan);
   const filteredEntries = filterEntriesByPeriod(entries, activePeriod);
   const diagnoses = calculateDiagnoses(clients, filteredEntries, {
     hourlyCost: organization.hourly_cost,
@@ -58,6 +65,14 @@ export default async function DashboardPage({
       </div>
 
       <PeriodFilter active={activePeriod} />
+
+      <OnboardingGuide
+        setupOk={setup.ok}
+        clientsCount={clients.length}
+        entriesCount={entries.length}
+        hasDiagnosis={diagnoses.length > 0}
+        planName={plan.name}
+      />
 
       <section className="dashboard-grid" aria-label="Resumo">
         <MetricCard label="Receita analisada" value={formatCurrency(totals.revenue)} hint={`Soma dos lancamentos: ${activePeriodLabel}.`} />

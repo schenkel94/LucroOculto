@@ -26,8 +26,8 @@ export function AppShell({
           <Link href="/dashboard/clients">Clientes</Link>
           <Link href="/dashboard/settings">Ajustes</Link>
           <Link href="/setup">Setup</Link>
-          <Link href="/launch">Lancamento</Link>
-          <Link href="/admin">Planos</Link>
+          <Link href="/launch">Planos</Link>
+          {organization.is_founder ? <Link href="/admin">Admin</Link> : null}
           <form action={signOut}>
             <button type="submit">Sair</button>
           </form>
@@ -39,6 +39,12 @@ export function AppShell({
           Plano {plan.name}
           <br />
           {getBillingStatusLabel(organization.billing_status)}
+          {organization.is_founder ? (
+            <>
+              <br />
+              Fundador
+            </>
+          ) : null}
         </p>
       </aside>
 

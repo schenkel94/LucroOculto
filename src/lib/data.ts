@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { applyAccessProfile } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import type {
   BillingEvent,
@@ -25,10 +26,13 @@ export async function getAuthenticatedContext() {
     redirect("/login");
   }
 
-  const organization = await getOrCreateOrganization(supabase, {
-    id: user.id,
-    email: user.email ?? undefined
-  });
+  const organization = applyAccessProfile(
+    await getOrCreateOrganization(supabase, {
+      id: user.id,
+      email: user.email ?? undefined
+    }),
+    user.email
+  );
 
   return {
     supabase,
@@ -129,6 +133,7 @@ export function normalizeOrganization(row: Record<string, unknown>): Organizatio
     owner_user_id: String(row.owner_user_id),
     name: String(row.name),
     plan: String(row.plan),
+    is_founder: false,
     billing_status: nullableString(row.billing_status) ?? "trial",
     billing_email: nullableString(row.billing_email),
     billing_notes: nullableString(row.billing_notes),

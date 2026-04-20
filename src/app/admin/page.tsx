@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { CopyButton } from "@/components/copy-button";
 import { BetaRequestForm } from "@/components/forms";
@@ -12,6 +13,11 @@ import {
 
 export default async function AdminPage() {
   const { organization, user, clients, contracts, entries, imports } = await getDashboardData();
+
+  if (!organization.is_founder) {
+    redirect("/launch");
+  }
+
   const billingEvents = await getBillingEvents(organization.id);
 
   const revenue = entries.reduce((total, entry) => total + entry.revenue, 0);
@@ -35,8 +41,8 @@ where id = '${organization.id}';`;
         <div className="page-title">
           <h1>Admin, planos e beta pago</h1>
           <p>
-            Um cockpit simples para vender beta, acompanhar limite e liberar
-            acesso manualmente sem processador de pagamento.
+            Cockpit de fundador para vender beta, acompanhar limite e liberar
+            acesso manualmente sem expor SQL para usuarios normais.
           </p>
         </div>
       </div>

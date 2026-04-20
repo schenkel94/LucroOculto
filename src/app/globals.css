@@ -831,6 +831,86 @@ tr:last-child td {
   width: 100%;
 }
 
+.onboarding-guide {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(22, 138, 100, 0.34);
+  border-radius: var(--radius);
+  background: #ffffff;
+  padding: 22px;
+}
+
+.onboarding-head,
+.onboarding-current {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.onboarding-head h2 {
+  margin: 0 0 8px;
+  font-size: 1.7rem;
+}
+
+.onboarding-progress {
+  height: 12px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: #e7ebe9;
+}
+
+.onboarding-progress-fill {
+  height: 100%;
+  border-radius: var(--radius);
+  background: var(--green);
+}
+
+.onboarding-current {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--green-soft);
+  padding: 14px;
+}
+
+.onboarding-current span,
+.onboarding-step span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.onboarding-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.onboarding-step {
+  display: grid;
+  min-height: 178px;
+  align-content: start;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.onboarding-step h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.onboarding-step.active {
+  border-color: rgba(22, 138, 100, 0.58);
+}
+
+.onboarding-step.done {
+  background: #f7faf9;
+}
+
 .button:disabled,
 .button-secondary:disabled,
 .button-danger:disabled {
@@ -1097,6 +1177,7 @@ tr:last-child td {
   .two-column,
   .three-column,
   .plan-grid,
+  .onboarding-grid,
   .period-filter,
   .insight-strip,
   .simulator-results,
@@ -1131,6 +1212,8 @@ tr:last-child td {
   .topbar,
   .report-header,
   .simulator-head,
+  .onboarding-head,
+  .onboarding-current,
   .launch-band,
   .setup-summary {
     flex-direction: column;
