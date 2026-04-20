@@ -14,13 +14,34 @@ export type SetupStatus = {
 };
 
 const REQUIRED_TABLES = [
-  "organizations",
-  "clients",
-  "contracts",
-  "work_entries",
-  "imports",
-  "recommendations",
-  "billing_events"
+  {
+    name: "organizations",
+    columns: "id,billing_status,paid_until,beta_started_at"
+  },
+  {
+    name: "clients",
+    columns: "id"
+  },
+  {
+    name: "contracts",
+    columns: "id"
+  },
+  {
+    name: "work_entries",
+    columns: "id"
+  },
+  {
+    name: "imports",
+    columns: "id"
+  },
+  {
+    name: "recommendations",
+    columns: "id"
+  },
+  {
+    name: "billing_events",
+    columns: "id,event_type,plan,amount,status"
+  }
 ];
 
 export async function getSetupStatus(): Promise<SetupStatus> {
@@ -62,11 +83,11 @@ export async function getSetupStatus(): Promise<SetupStatus> {
   });
 
   for (const table of REQUIRED_TABLES) {
-    const { error } = await supabase.from(table).select("id", { head: true }).limit(1);
+    const { error } = await supabase.from(table.name).select(table.columns, { head: true }).limit(1);
 
     items.push({
-      key: `table.${table}`,
-      label: `Tabela ${table}`,
+      key: `table.${table.name}`,
+      label: `Tabela ${table.name}`,
       ok: !error,
       detail: error ? normalizeSupabaseError(error.message) : "Encontrada com RLS ativo."
     });
