@@ -697,6 +697,134 @@ tr:last-child td {
   background: var(--red);
 }
 
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.plan-card {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 20px;
+}
+
+.plan-card h3,
+.plan-gate h2 {
+  margin: 0;
+  font-size: 1.45rem;
+}
+
+.plan-card > strong {
+  font-size: 1.8rem;
+}
+
+.plan-card-head,
+.billing-status,
+.limit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.plan-current {
+  border: 1px solid rgba(22, 138, 100, 0.42);
+  border-radius: var(--radius);
+  background: var(--green-soft);
+  color: #0f684d;
+  padding: 5px 9px;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.limit-list,
+.billing-timeline,
+.plan-gate {
+  display: grid;
+  gap: 12px;
+}
+
+.limit-row {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.limit-row span,
+.billing-status span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.plain-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.billing-status {
+  margin: 18px 0;
+}
+
+.billing-status div {
+  flex: 1;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.billing-status strong {
+  display: block;
+  margin-top: 6px;
+}
+
+.sql-box {
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #eef1f0;
+  padding: 14px;
+  white-space: pre-wrap;
+}
+
+.billing-event {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.billing-event div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.billing-event span {
+  color: var(--muted);
+}
+
+.plan-gate {
+  justify-items: start;
+}
+
+.plan-gate .limit-row {
+  width: 100%;
+}
+
+.button:disabled,
+.button-secondary:disabled,
+.button-danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
 .csv-drop {
   display: grid;
   gap: 14px;
@@ -914,6 +1042,7 @@ tr:last-child td {
   .dashboard-grid,
   .two-column,
   .three-column,
+  .plan-grid,
   .period-filter,
   .insight-strip,
   .simulator-results,
@@ -973,6 +1102,11 @@ tr:last-child td {
 
   .decision-hero h2 {
     font-size: 2.15rem;
+  }
+
+  .billing-status {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 

@@ -19,7 +19,8 @@ const REQUIRED_TABLES = [
   "contracts",
   "work_entries",
   "imports",
-  "recommendations"
+  "recommendations",
+  "billing_events"
 ];
 
 export async function getSetupStatus(): Promise<SetupStatus> {

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedContext, slugKey, toInteger, toNumber } from "@/lib/data";
+import { getPlanDefinition } from "@/lib/plans";
 import type { CsvWorkRow } from "@/lib/types";
 
 export async function updateOrganizationSettings(formData: FormData) {
@@ -25,9 +26,22 @@ export async function updateOrganizationSettings(formData: FormData) {
 
 export async function createClientRecord(formData: FormData) {
   const { supabase, organization } = await getAuthenticatedContext();
+  const plan = getPlanDefinition(organization.plan);
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return;
+
+  if (plan.limits.clients !== null) {
+    const { count, error: countError } = await supabase
+      .from("clients")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organization.id);
+
+    if (countError) throw countError;
+    if ((count ?? 0) >= plan.limits.clients) {
+      throw new Error("Limite de clientes atingido. Solicite o beta pago para continuar.");
+    }
+  }
 
   const { error } = await supabase.from("clients").insert({
     organization_id: organization.id,
@@ -106,6 +120,24 @@ export async function deleteClientRecord(clientId: string) {
 
 export async function importCsvRows(rows: CsvWorkRow[], filename: string) {
   const { supabase, organization } = await getAuthenticatedContext();
+  const plan = getPlanDefinition(organization.plan);
+
+  if (plan.limits.importsPerMonth !== null) {
+    const monthStart = new Date();
+    monthStart.setUTCDate(1);
+    monthStart.setUTCHours(0, 0, 0, 0);
+
+    const { count, error: importCountError } = await supabase
+      .from("imports")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organization.id)
+      .gte("created_at", monthStart.toISOString());
+
+    if (importCountError) throw importCountError;
+    if ((count ?? 0) >= plan.limits.importsPerMonth) {
+      throw new Error("Limite mensal de importacoes atingido. Solicite o beta pago para continuar.");
+    }
+  }
 
   const { data: existingClients, error: clientsError } = await supabase
     .from("clients")
@@ -134,6 +166,21 @@ export async function importCsvRows(rows: CsvWorkRow[], filename: string) {
   const validRows = rows.filter((row) => row.data && row.cliente);
   let rowsInvalid = rows.length - validRows.length;
   const entries = [];
+
+  if (plan.limits.clients !== null) {
+    const newClientKeys = new Set<string>();
+
+    for (const row of validRows) {
+      const clientKey = slugKey(row.cliente.trim());
+      if (!clientMap.has(clientKey)) {
+        newClientKeys.add(clientKey);
+      }
+    }
+
+    if (clientMap.size + newClientKeys.size > plan.limits.clients) {
+      throw new Error("Este CSV ultrapassa o limite de clientes do plano Free.");
+    }
+  }
 
   for (const row of validRows) {
     const clientName = row.cliente.trim();
@@ -228,6 +275,19 @@ export async function importCsvRows(rows: CsvWorkRow[], filename: string) {
 
 export async function seedDemoData() {
   const { supabase, organization } = await getAuthenticatedContext();
+  const plan = getPlanDefinition(organization.plan);
+
+  if (plan.limits.clients !== null) {
+    const { count, error: countError } = await supabase
+      .from("clients")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organization.id);
+
+    if (countError) throw countError;
+    if ((count ?? 0) + 3 > plan.limits.clients) {
+      throw new Error("Os dados demo ultrapassam o limite de clientes do plano Free.");
+    }
+  }
 
   const { data: clients, error: clientError } = await supabase
     .from("clients")
@@ -311,5 +371,26 @@ export async function seedDemoData() {
   );
 
   if (entryError) throw entryError;
+  revalidatePath("/dashboard", "layout");
+}
+
+export async function requestPaidBeta(formData: FormData) {
+  const { supabase, organization, user } = await getAuthenticatedContext();
+
+  const contactEmail = String(formData.get("contact_email") ?? user.email ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+
+  const { error } = await supabase.from("billing_events").insert({
+    organization_id: organization.id,
+    event_type: "beta_requested",
+    plan: "beta",
+    amount: 97,
+    status: "open",
+    contact_email: contactEmail || user.email || null,
+    notes: notes || null
+  });
+
+  if (error) throw error;
+  revalidatePath("/admin");
   revalidatePath("/dashboard", "layout");
 }

@@ -6,13 +6,15 @@ import {
   DeleteClientButton,
   WorkEntryForm
 } from "@/components/forms";
+import { PlanGate } from "@/components/plan-gate";
 import { StatusBadge } from "@/components/status-badge";
 import { calculateDiagnoses } from "@/lib/calculations";
 import { getDashboardData } from "@/lib/data";
 import { formatCurrency, formatPercent } from "@/lib/format";
+import { getUsageStatus } from "@/lib/plans";
 
 export default async function ClientsPage() {
-  const { organization, clients, contracts, entries } = await getDashboardData();
+  const { organization, clients, contracts, entries, imports } = await getDashboardData();
   const diagnoses = calculateDiagnoses(clients, entries, {
     hourlyCost: organization.hourly_cost,
     targetMargin: organization.target_margin,
@@ -22,6 +24,7 @@ export default async function ClientsPage() {
   });
 
   const diagnosisMap = new Map(diagnoses.map((diagnosis) => [diagnosis.clientId, diagnosis]));
+  const usage = getUsageStatus({ organization, clientsCount: clients.length, imports });
 
   return (
     <AppShell organization={organization}>
@@ -81,7 +84,16 @@ export default async function ClientsPage() {
         <aside className="form-grid">
           <div className="panel">
             <h2 style={{ marginTop: 0 }}>Novo cliente</h2>
-            <ClientForm />
+            {usage.clients.reached ? (
+              <PlanGate
+                title="Carteira free completa"
+                description="O plano Free valida com 3 clientes. Para cadastrar mais contas, libere o beta pago."
+                used={usage.clients.used}
+                limit={usage.clients.limit}
+              />
+            ) : (
+              <ClientForm />
+            )}
           </div>
           <div className="panel">
             <h2 style={{ marginTop: 0 }}>Novo contrato</h2>

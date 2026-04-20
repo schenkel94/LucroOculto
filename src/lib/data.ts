@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type {
+  BillingEvent,
   ClientRecord,
   ContractRecord,
+  ImportRecord,
   Organization,
   WorkEntry
 } from "@/lib/types";
@@ -60,7 +62,6 @@ export async function getDashboardData() {
         .select("*")
         .eq("organization_id", organization.id)
         .order("created_at", { ascending: false })
-        .limit(5)
     ]);
 
   if (clientsResult.error) throw clientsResult.error;
@@ -74,8 +75,25 @@ export async function getDashboardData() {
     clients: normalizeClients(clientsResult.data ?? []),
     contracts: normalizeContracts(contractsResult.data ?? []),
     entries: normalizeEntries(entriesResult.data ?? []),
-    imports: importsResult.data ?? []
+    imports: normalizeImports(importsResult.data ?? [])
   };
+}
+
+export async function getBillingEvents(organizationId: string): Promise<BillingEvent[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("billing_events")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  if (error) {
+    if (error.message.includes("does not exist") || error.code === "42P01") return [];
+    throw error;
+  }
+
+  return normalizeBillingEvents(data ?? []);
 }
 
 async function getOrCreateOrganization(
@@ -111,6 +129,11 @@ export function normalizeOrganization(row: Record<string, unknown>): Organizatio
     owner_user_id: String(row.owner_user_id),
     name: String(row.name),
     plan: String(row.plan),
+    billing_status: nullableString(row.billing_status) ?? "trial",
+    billing_email: nullableString(row.billing_email),
+    billing_notes: nullableString(row.billing_notes),
+    paid_until: nullableString(row.paid_until),
+    beta_started_at: nullableString(row.beta_started_at),
     hourly_cost: toNumber(row.hourly_cost),
     target_margin: toNumber(row.target_margin),
     rework_factor: toNumber(row.rework_factor),
@@ -162,6 +185,33 @@ export function normalizeEntries(rows: Record<string, unknown>[]): WorkEntry[] {
     notes: nullableString(row.notes),
     clients: relationName(row.clients),
     contracts: relationName(row.contracts)
+  }));
+}
+
+export function normalizeImports(rows: Record<string, unknown>[]): ImportRecord[] {
+  return rows.map((row) => ({
+    id: String(row.id),
+    organization_id: String(row.organization_id),
+    filename: String(row.filename),
+    status: String(row.status),
+    rows_total: toInteger(row.rows_total),
+    rows_valid: toInteger(row.rows_valid),
+    rows_invalid: toInteger(row.rows_invalid),
+    created_at: String(row.created_at)
+  }));
+}
+
+export function normalizeBillingEvents(rows: Record<string, unknown>[]): BillingEvent[] {
+  return rows.map((row) => ({
+    id: String(row.id),
+    organization_id: String(row.organization_id),
+    event_type: String(row.event_type),
+    plan: String(row.plan),
+    amount: toNumber(row.amount),
+    status: String(row.status),
+    contact_email: nullableString(row.contact_email),
+    notes: nullableString(row.notes),
+    created_at: String(row.created_at)
   }));
 }
 

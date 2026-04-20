@@ -1,10 +1,13 @@
 import { AppShell } from "@/components/app-shell";
 import { CsvImporter } from "@/components/csv-importer";
+import { PlanGate } from "@/components/plan-gate";
 import { getDashboardData } from "@/lib/data";
+import { getUsageStatus } from "@/lib/plans";
 import Link from "next/link";
 
 export default async function ImportPage() {
-  const { organization, imports } = await getDashboardData();
+  const { organization, clients, imports } = await getDashboardData();
+  const usage = getUsageStatus({ organization, clientsCount: clients.length, imports });
 
   return (
     <AppShell organization={organization}>
@@ -23,7 +26,16 @@ export default async function ImportPage() {
 
       <div className="two-column">
         <section className="panel">
-          <CsvImporter />
+          {usage.imports.reached ? (
+            <PlanGate
+              title="Importacao mensal usada"
+              description="O plano Free permite 1 CSV por mes. O beta pago libera importacoes recorrentes."
+              used={usage.imports.used}
+              limit={usage.imports.limit}
+            />
+          ) : (
+            <CsvImporter />
+          )}
         </section>
 
         <aside className="panel">

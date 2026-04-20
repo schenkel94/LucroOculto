@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signOut } from "@/app/actions";
+import { getBillingStatusLabel, getPlanDefinition } from "@/lib/plans";
 import type { Organization } from "@/lib/types";
 
 export function AppShell({
@@ -9,6 +10,8 @@ export function AppShell({
   organization: Organization;
   children: React.ReactNode;
 }) {
+  const plan = getPlanDefinition(organization.plan);
+
   return (
     <div className="app-layout">
       <aside className="sidebar">
@@ -32,7 +35,9 @@ export function AppShell({
         <p className="muted" style={{ marginTop: 28 }}>
           {organization.name}
           <br />
-          Plano {organization.plan}
+          Plano {plan.name}
+          <br />
+          {getBillingStatusLabel(organization.billing_status)}
         </p>
       </aside>
 

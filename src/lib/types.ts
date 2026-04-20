@@ -3,11 +3,39 @@ export type Organization = {
   owner_user_id: string;
   name: string;
   plan: string;
+  billing_status: string;
+  billing_email: string | null;
+  billing_notes: string | null;
+  paid_until: string | null;
+  beta_started_at: string | null;
   hourly_cost: number;
   target_margin: number;
   rework_factor: number;
   urgency_factor: number;
   late_daily_penalty: number;
+};
+
+export type BillingEvent = {
+  id: string;
+  organization_id: string;
+  event_type: string;
+  plan: string;
+  amount: number;
+  status: string;
+  contact_email: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type ImportRecord = {
+  id: string;
+  organization_id: string;
+  filename: string;
+  status: string;
+  rows_total: number;
+  rows_valid: number;
+  rows_invalid: number;
+  created_at: string;
 };
 
 export type ClientRecord = {

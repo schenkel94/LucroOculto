@@ -14,6 +14,34 @@ create table if not exists public.organizations (
   updated_at timestamptz not null default now()
 );
 
+alter table public.organizations
+  add column if not exists billing_status text not null default 'trial',
+  add column if not exists billing_email text,
+  add column if not exists billing_notes text,
+  add column if not exists paid_until date,
+  add column if not exists beta_started_at timestamptz default now();
+
+update public.organizations
+set billing_status = 'trial'
+where billing_status is null;
+
+do $$
+begin
+  alter table public.organizations
+    add constraint organizations_plan_check check (plan in ('free', 'beta', 'pro'));
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.organizations
+    add constraint organizations_billing_status_check
+    check (billing_status in ('trial', 'requested', 'active', 'past_due', 'canceled'));
+exception
+  when duplicate_object then null;
+end $$;
+
 create table if not exists public.clients (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
@@ -81,12 +109,26 @@ create table if not exists public.recommendations (
   generated_at timestamptz not null default now()
 );
 
+create table if not exists public.billing_events (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  event_type text not null default 'beta_requested',
+  plan text not null default 'beta',
+  amount numeric(12, 2) not null default 0,
+  status text not null default 'open',
+  contact_email text,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists clients_organization_id_idx on public.clients(organization_id);
 create index if not exists contracts_organization_id_idx on public.contracts(organization_id);
 create index if not exists contracts_client_id_idx on public.contracts(client_id);
 create index if not exists work_entries_organization_id_idx on public.work_entries(organization_id);
 create index if not exists work_entries_client_id_idx on public.work_entries(client_id);
 create index if not exists work_entries_entry_date_idx on public.work_entries(entry_date);
+create index if not exists billing_events_organization_id_idx on public.billing_events(organization_id);
+create index if not exists billing_events_created_at_idx on public.billing_events(created_at);
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -119,6 +161,7 @@ alter table public.contracts enable row level security;
 alter table public.work_entries enable row level security;
 alter table public.imports enable row level security;
 alter table public.recommendations enable row level security;
+alter table public.billing_events enable row level security;
 
 drop policy if exists "owners can select organizations" on public.organizations;
 drop policy if exists "owners can insert organizations" on public.organizations;
@@ -132,6 +175,8 @@ drop policy if exists "owners can manage contracts" on public.contracts;
 drop policy if exists "owners can manage work entries" on public.work_entries;
 drop policy if exists "owners can manage imports" on public.imports;
 drop policy if exists "owners can manage recommendations" on public.recommendations;
+drop policy if exists "owners can select billing events" on public.billing_events;
+drop policy if exists "owners can request beta billing" on public.billing_events;
 
 create policy "owners can select organizations"
 on public.organizations for select
@@ -139,7 +184,11 @@ using (owner_user_id = auth.uid());
 
 create policy "owners can insert organizations"
 on public.organizations for insert
-with check (owner_user_id = auth.uid());
+with check (
+  owner_user_id = auth.uid()
+  and plan = 'free'
+  and billing_status = 'trial'
+);
 
 create policy "owners can update organizations"
 on public.organizations for update
@@ -264,3 +313,36 @@ with check (
     and organizations.owner_user_id = auth.uid()
   )
 );
+
+create policy "owners can select billing events"
+on public.billing_events for select
+using (
+  exists (
+    select 1 from public.organizations
+    where organizations.id = billing_events.organization_id
+    and organizations.owner_user_id = auth.uid()
+  )
+);
+
+create policy "owners can request beta billing"
+on public.billing_events for insert
+with check (
+  event_type = 'beta_requested'
+  and plan = 'beta'
+  and status = 'open'
+  and exists (
+    select 1 from public.organizations
+    where organizations.id = billing_events.organization_id
+    and organizations.owner_user_id = auth.uid()
+  )
+);
+
+revoke update on public.organizations from anon, authenticated;
+grant update (
+  name,
+  hourly_cost,
+  target_margin,
+  rework_factor,
+  urgency_factor,
+  late_daily_penalty
+) on public.organizations to authenticated;

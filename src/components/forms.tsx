@@ -3,6 +3,7 @@ import {
   createContractRecord,
   createWorkEntryRecord,
   deleteClientRecord,
+  requestPaidBeta,
   seedDemoData,
   updateOrganizationSettings
 } from "@/app/dashboard/actions";
@@ -312,6 +313,45 @@ export function DeleteClientButton({ clientId }: { clientId: string }) {
     <form action={action}>
       <button className="button-danger" type="submit">
         Excluir cliente
+      </button>
+    </form>
+  );
+}
+
+export function BetaRequestForm({
+  defaultEmail,
+  disabled
+}: {
+  defaultEmail?: string | null;
+  disabled?: boolean;
+}) {
+  return (
+    <form className="form-grid" action={requestPaidBeta}>
+      <div className="field">
+        <label className="label" htmlFor="billing-email">
+          Email para cobranca
+        </label>
+        <input
+          id="billing-email"
+          name="contact_email"
+          type="email"
+          defaultValue={defaultEmail ?? ""}
+          placeholder="financeiro@empresa.com"
+          required
+        />
+      </div>
+      <div className="field">
+        <label className="label" htmlFor="billing-notes">
+          Observacao
+        </label>
+        <textarea
+          id="billing-notes"
+          name="notes"
+          placeholder="Ex: quero liberar beta por PIX e validar com 20 clientes."
+        />
+      </div>
+      <button className="button" type="submit" disabled={disabled}>
+        Solicitar beta pago
       </button>
     </form>
   );
