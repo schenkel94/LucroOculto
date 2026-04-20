@@ -1,15 +1,26 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { DiagnosisExplainer } from "@/components/diagnosis-explainer";
 import { MetricCard } from "@/components/metric-card";
+import { PeriodFilter } from "@/components/period-filter";
 import { SeedDemoButton } from "@/components/forms";
 import { StatusBadge } from "@/components/status-badge";
 import { calculateDiagnoses } from "@/lib/calculations";
 import { getDashboardData } from "@/lib/data";
 import { formatCurrency, formatNumber, formatPercent } from "@/lib/format";
+import { filterEntriesByPeriod, normalizePeriod, periodLabel } from "@/lib/periods";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const { period: periodParam } = await searchParams;
+  const activePeriod = normalizePeriod(periodParam);
+  const activePeriodLabel = periodLabel(activePeriod);
   const { organization, clients, entries } = await getDashboardData();
-  const diagnoses = calculateDiagnoses(clients, entries, {
+  const filteredEntries = filterEntriesByPeriod(entries, activePeriod);
+  const diagnoses = calculateDiagnoses(clients, filteredEntries, {
     hourlyCost: organization.hourly_cost,
     targetMargin: organization.target_margin,
     reworkFactor: organization.rework_factor,
@@ -29,6 +40,7 @@ export default async function DashboardPage() {
   );
 
   const margin = totals.revenue > 0 ? totals.profit / totals.revenue : 0;
+  const worstDiagnosis = diagnoses[0];
 
   return (
     <AppShell organization={organization}>
@@ -36,7 +48,8 @@ export default async function DashboardPage() {
         <div className="page-title">
           <h1>Diagnostico</h1>
           <p>
-            A carteira em ordem de dor: prejuizo primeiro, cliente bom por ultimo.
+            A carteira em ordem de dor: prejuizo primeiro, cliente bom por ultimo.{" "}
+            Periodo: {activePeriodLabel.toLowerCase()}.
           </p>
         </div>
         <Link className="button" href="/dashboard/import">
@@ -44,19 +57,29 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
+      <PeriodFilter active={activePeriod} />
+
       <section className="dashboard-grid" aria-label="Resumo">
-        <MetricCard label="Receita analisada" value={formatCurrency(totals.revenue)} hint="Soma dos lancamentos." />
+        <MetricCard label="Receita analisada" value={formatCurrency(totals.revenue)} hint={`Soma dos lancamentos: ${activePeriodLabel}.`} />
         <MetricCard label="Lucro estimado" value={formatCurrency(totals.profit)} hint="Depois de horas, caos e descontos." />
         <MetricCard label="Margem media" value={formatPercent(margin)} hint="Meta configuravel nos ajustes." />
         <MetricCard label="Clientes em risco" value={String(totals.risk)} hint="Renegociar, cortar ou mudar escopo." />
       </section>
+
+      {worstDiagnosis ? (
+        <DiagnosisExplainer
+          diagnosis={worstDiagnosis}
+          period={activePeriodLabel}
+          targetMargin={organization.target_margin}
+        />
+      ) : null}
 
       <section className="section" style={{ paddingBottom: 0 }}>
         {diagnoses.length === 0 ? (
           <div className="empty">
             <h2 style={{ margin: 0 }}>Primeiro diagnostico ainda vazio.</h2>
             <p className="muted">
-              Cadastre clientes, importe um CSV ou crie dados demo para ver o motor funcionando.
+              Cadastre clientes, importe um CSV, mude o periodo ou crie dados demo para ver o motor funcionando.
             </p>
             <div className="actions">
               <SeedDemoButton />

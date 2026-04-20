@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { CopyButton } from "@/components/copy-button";
 import { MetricCard } from "@/components/metric-card";
+import { PriceSimulator } from "@/components/price-simulator";
 import { StatusBadge } from "@/components/status-badge";
 import { calculateClientDiagnosis } from "@/lib/calculations";
 import { getDashboardData } from "@/lib/data";
+import { getMainLeak } from "@/lib/diagnosis-insights";
 import { formatCurrency, formatNumber, formatPercent } from "@/lib/format";
 
 export default async function ClientDetailPage({
@@ -26,6 +29,13 @@ export default async function ClientDetailPage({
     urgencyFactor: organization.urgency_factor,
     lateDailyPenalty: organization.late_daily_penalty
   });
+  const mainLeak = getMainLeak(diagnosis);
+  const renewalArgument = [
+    `Nos dados analisados, ${client.name} gerou ${formatCurrency(diagnosis.revenue)} de receita.`,
+    `O atendimento consumiu ${formatNumber(diagnosis.hours, 1)} horas, teve ${diagnosis.urgentCount} urgencias e ${diagnosis.reworkCount} retrabalhos.`,
+    `A margem real ficou em ${formatPercent(diagnosis.margin)}, enquanto a meta da empresa e ${formatPercent(organization.target_margin)}.`,
+    `Para manter o atendimento sem queimar margem, o novo valor de referencia e ${formatCurrency(diagnosis.suggestedPrice)}.`
+  ].join(" ");
 
   return (
     <AppShell organization={organization}>
@@ -81,8 +91,24 @@ export default async function ClientDetailPage({
               Para buscar a margem alvo, o novo valor de referencia e{" "}
               <strong>{formatCurrency(diagnosis.suggestedPrice)}</strong>.
             </p>
+            <p className="muted">
+              Principal vazamento: <strong>{mainLeak.label}</strong>, com{" "}
+              {formatCurrency(mainLeak.value)}. {mainLeak.description}
+            </p>
+            <div className="actions">
+              <CopyButton text={renewalArgument} />
+            </div>
           </aside>
         </div>
+      </section>
+
+      <section className="section" style={{ paddingBottom: 0 }}>
+        <PriceSimulator
+          currentRevenue={diagnosis.revenue}
+          suggestedPrice={diagnosis.suggestedPrice}
+          targetMargin={organization.target_margin}
+          totalCost={diagnosis.totalCost}
+        />
       </section>
 
       <section className="section" style={{ paddingBottom: 0 }}>

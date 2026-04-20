@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CopyButton } from "@/components/copy-button";
 import { PrintButton } from "@/components/print-button";
 import { StatusBadge } from "@/components/status-badge";
 import { calculateClientDiagnosis } from "@/lib/calculations";
 import { getDashboardData } from "@/lib/data";
+import { getMainLeak } from "@/lib/diagnosis-insights";
 import { formatCurrency, formatNumber, formatPercent } from "@/lib/format";
 
 export default async function ClientReportPage({
@@ -25,6 +27,12 @@ export default async function ClientReportPage({
     urgencyFactor: organization.urgency_factor,
     lateDailyPenalty: organization.late_daily_penalty
   });
+  const mainLeak = getMainLeak(diagnosis);
+  const conversationText = [
+    `Nos ultimos dados analisados, o contrato consumiu ${formatNumber(diagnosis.hours, 1)} horas, teve ${diagnosis.urgentCount} urgencias e ${diagnosis.reworkCount} retrabalhos.`,
+    `O principal vazamento foi ${mainLeak.label.toLowerCase()}, estimado em ${formatCurrency(mainLeak.value)}.`,
+    `Para manter atendimento sem queimar margem, o valor de referencia para renovacao fica em ${formatCurrency(diagnosis.suggestedPrice)}.`
+  ].join(" ");
 
   return (
     <main className="report-page">
@@ -117,6 +125,13 @@ export default async function ClientReportPage({
                 Para manter atendimento sem queimar margem, o valor de referencia
                 para renovacao fica em {formatCurrency(diagnosis.suggestedPrice)}.
               </p>
+              <p className="muted">
+                Principal vazamento: <strong>{mainLeak.label}</strong>, com{" "}
+                {formatCurrency(mainLeak.value)}.
+              </p>
+              <div className="actions no-print">
+                <CopyButton text={conversationText} />
+              </div>
             </aside>
           </div>
         </section>
