@@ -576,6 +576,74 @@ tr:last-child td {
   margin-bottom: 28px;
 }
 
+.setup-page {
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 42px 16px;
+}
+
+.setup-shell {
+  width: min(980px, 100%);
+  margin: 0 auto;
+}
+
+.setup-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 16px 18px;
+}
+
+.setup-summary.ok {
+  border-color: rgba(22, 138, 100, 0.45);
+  background: var(--green-soft);
+}
+
+.setup-summary.warn {
+  border-color: rgba(184, 128, 20, 0.55);
+  background: var(--amber-soft);
+}
+
+.setup-summary span {
+  color: var(--muted);
+}
+
+.setup-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.setup-item {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 16px;
+}
+
+.setup-dot {
+  width: 12px;
+  height: 12px;
+  margin-top: 5px;
+  border-radius: 999px;
+}
+
+.setup-dot.ok {
+  background: var(--green);
+}
+
+.setup-dot.warn {
+  background: var(--amber);
+}
+
 @media (max-width: 940px) {
   .demo-grid,
   .dashboard-grid,
@@ -607,7 +675,8 @@ tr:last-child td {
   }
 
   .topbar,
-  .report-header {
+  .report-header,
+  .setup-summary {
     flex-direction: column;
   }
 

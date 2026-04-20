@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { CsvImporter } from "@/components/csv-importer";
 import { getDashboardData } from "@/lib/data";
+import Link from "next/link";
 
 export default async function ImportPage() {
   const { organization, imports } = await getDashboardData();
@@ -15,6 +16,9 @@ export default async function ImportPage() {
             manual e CSV bastam para chegar na primeira decisao.
           </p>
         </div>
+        <a className="button" href="/api/templates/lucro-oculto.csv">
+          Baixar modelo
+        </a>
       </div>
 
       <div className="two-column">
@@ -32,6 +36,14 @@ export default async function ImportPage() {
 {`data,cliente,contrato,receita,horas,custo_hora,chamados,urgencias,retrabalhos,descontos,atraso_pagamento_dias,observacoes
 2026-04-01,Condominio Alfa,Suporte mensal,2500,18,65,12,3,2,0,8,Muitas urgencias fora do combinado`}
           </pre>
+          <div className="actions">
+            <a className="button-secondary" href="/api/templates/lucro-oculto.csv">
+              Baixar CSV preenchido
+            </a>
+            <Link className="button-secondary" href="/setup">
+              Checar setup
+            </Link>
+          </div>
 
           <h3>Ultimas importacoes</h3>
           {imports.length === 0 ? (

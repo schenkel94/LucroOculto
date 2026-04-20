@@ -51,6 +51,14 @@ data,cliente,contrato,receita,horas,custo_hora,chamados,urgencias,retrabalhos,de
 
 A Vercel instala as dependencias pelo `package.json`. Configure as mesmas env vars no projeto da Vercel antes do primeiro deploy de producao.
 
+Depois do deploy, abra:
+
+```txt
+https://seu-dominio.vercel.app/setup
+```
+
+Essa rota checa se as variaveis publicas existem e se o schema do Supabase foi aplicado.
+
 ## Segredos
 
 Arquivos `.env*.local`, `.vercel` e `config/users.local.json` ficam fora do Git. Nunca commite senhas, service keys ou chaves secretas.

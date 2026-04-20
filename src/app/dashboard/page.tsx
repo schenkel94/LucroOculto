@@ -60,9 +60,15 @@ export default async function DashboardPage() {
             </p>
             <div className="actions">
               <SeedDemoButton />
+              <Link className="button-secondary" href="/dashboard/import">
+                Importar CSV
+              </Link>
               <Link className="button-secondary" href="/dashboard/clients">
                 Cadastrar manualmente
               </Link>
+              <a className="button-secondary" href="/api/templates/lucro-oculto.csv">
+                Baixar modelo
+              </a>
             </div>
           </div>
         ) : (

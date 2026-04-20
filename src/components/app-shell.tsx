@@ -22,6 +22,7 @@ export function AppShell({
           <Link href="/dashboard/import">Importar CSV</Link>
           <Link href="/dashboard/clients">Clientes</Link>
           <Link href="/dashboard/settings">Ajustes</Link>
+          <Link href="/setup">Setup</Link>
           <Link href="/admin">Admin beta</Link>
           <form action={signOut}>
             <button type="submit">Sair</button>
