@@ -5,21 +5,29 @@ import { PrintButton } from "@/components/print-button";
 import { StatusBadge } from "@/components/status-badge";
 import { calculateClientDiagnosis } from "@/lib/calculations";
 import { getDashboardData } from "@/lib/data";
-import { getMainLeak } from "@/lib/diagnosis-insights";
+import { buildDecisionReport } from "@/lib/decision-report";
 import { formatCurrency, formatNumber, formatPercent } from "@/lib/format";
+import { filterEntriesByPeriod, normalizePeriod, periodLabel } from "@/lib/periods";
 
 export default async function ClientReportPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ period?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, { period: periodParam }] = await Promise.all([params, searchParams]);
+  const activePeriod = normalizePeriod(periodParam);
+  const activePeriodLabel = periodLabel(activePeriod);
   const { organization, clients, entries } = await getDashboardData();
   const client = clients.find((item) => item.id === id);
 
   if (!client) notFound();
 
-  const clientEntries = entries.filter((entry) => entry.client_id === client.id);
+  const clientEntries = filterEntriesByPeriod(
+    entries.filter((entry) => entry.client_id === client.id),
+    activePeriod
+  );
   const diagnosis = calculateClientDiagnosis(client, clientEntries, {
     hourlyCost: organization.hourly_cost,
     targetMargin: organization.target_margin,
@@ -27,12 +35,7 @@ export default async function ClientReportPage({
     urgencyFactor: organization.urgency_factor,
     lateDailyPenalty: organization.late_daily_penalty
   });
-  const mainLeak = getMainLeak(diagnosis);
-  const conversationText = [
-    `Nos ultimos dados analisados, o contrato consumiu ${formatNumber(diagnosis.hours, 1)} horas, teve ${diagnosis.urgentCount} urgencias e ${diagnosis.reworkCount} retrabalhos.`,
-    `O principal vazamento foi ${mainLeak.label.toLowerCase()}, estimado em ${formatCurrency(mainLeak.value)}.`,
-    `Para manter atendimento sem queimar margem, o valor de referencia para renovacao fica em ${formatCurrency(diagnosis.suggestedPrice)}.`
-  ].join(" ");
+  const report = buildDecisionReport(diagnosis, organization.target_margin);
 
   return (
     <main className="report-page">
@@ -43,24 +46,40 @@ export default async function ClientReportPage({
               Lucro Oculto
             </p>
             <h1 style={{ margin: 0 }}>{client.name}</h1>
-            <p className="muted">{organization.name}</p>
+            <p className="muted">
+              {organization.name} | Periodo: {activePeriodLabel.toLowerCase()}
+            </p>
           </div>
           <div className="actions no-print" style={{ marginTop: 0 }}>
-            <Link className="button-secondary" href={`/dashboard/clients/${client.id}`}>
+            <Link className="button-secondary" href={`/dashboard/clients/${client.id}?period=${activePeriod}`}>
               Voltar
             </Link>
+            <CopyButton label="Copiar memo" text={report.copyText} />
             <PrintButton />
           </div>
         </div>
+
+        <section className={`decision-hero ${diagnosis.action}`}>
+          <div>
+            <p className="eyebrow">Relatorio que vende a decisao</p>
+            <h2>{report.headline}</h2>
+            <p>{report.summary}</p>
+          </div>
+          <aside className="decision-summary">
+            <span>Decisao recomendada</span>
+            <strong>{report.decision}</strong>
+            <StatusBadge action={diagnosis.action} />
+          </aside>
+        </section>
 
         <div className="dashboard-grid">
           <div className="metric">
             <span>Receita</span>
             <strong>{formatCurrency(diagnosis.revenue)}</strong>
-            <small>Periodo analisado.</small>
+            <small>{activePeriodLabel}.</small>
           </div>
           <div className="metric">
-            <span>Lucro estimado</span>
+            <span>Lucro atual</span>
             <strong>{formatCurrency(diagnosis.profit)}</strong>
             <small>Depois dos custos invisiveis.</small>
           </div>
@@ -70,17 +89,65 @@ export default async function ClientReportPage({
             <small>Meta: {formatPercent(organization.target_margin)}</small>
           </div>
           <div className="metric">
-            <span>Acao</span>
-            <strong style={{ fontSize: "1rem" }}>
-              <StatusBadge action={diagnosis.action} />
-            </strong>
-            <small>{diagnosis.reason}</small>
+            <span>Impacto estimado</span>
+            <strong>{formatCurrency(report.expectedLift)}</strong>
+            <small>Ganho se a proposta for aceita.</small>
           </div>
         </div>
 
-        <section className="section" style={{ paddingBottom: 0 }}>
+        <section className="report-section">
+          <div className="section-heading">
+            <h2>Evidencias que sustentam</h2>
+            <p>Mostre fato, nao opiniao. A conversa fica mais simples quando a decisao nasce dos numeros.</p>
+          </div>
+          <div className="evidence-grid">
+            {report.evidence.map((item) => (
+              <div className="evidence-card" key={item.label}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <small>{item.detail}</small>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="report-section">
           <div className="two-column">
             <div className="panel">
+              <h2 style={{ marginTop: 0 }}>Proposta objetiva</h2>
+              <ul className="proposal-list">
+                {report.proposal.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+
+            <aside className="panel">
+              <h2 style={{ marginTop: 0 }}>Opcoes para fechar</h2>
+              <div className="decision-options">
+                {report.options.map((option) => (
+                  <div key={option.label}>
+                    <strong>{option.label}</strong>
+                    <p className="muted">{option.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section className="report-section">
+          <div className="two-column">
+            <div className="panel">
+              <h2 style={{ marginTop: 0 }}>Roteiro da conversa</h2>
+              <ol className="script-list">
+                {report.script.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ol>
+            </div>
+
+            <aside className="panel">
               <h2 style={{ marginTop: 0 }}>Resumo financeiro</h2>
               <div className="table-shell">
                 <table>
@@ -106,31 +173,15 @@ export default async function ClientReportPage({
                       <td>{formatCurrency(diagnosis.discounts + diagnosis.lateCost)}</td>
                     </tr>
                     <tr>
-                      <th>Preco recomendado</th>
-                      <td>{formatCurrency(diagnosis.suggestedPrice)}</td>
+                      <th>Valor recomendado</th>
+                      <td>{formatCurrency(report.proposedPrice)}</td>
+                    </tr>
+                    <tr>
+                      <th>Lucro se aceitar</th>
+                      <td>{formatCurrency(report.expectedProfit)}</td>
                     </tr>
                   </tbody>
                 </table>
-              </div>
-            </div>
-
-            <aside className="panel">
-              <h2 style={{ marginTop: 0 }}>Texto para a conversa</h2>
-              <p className="muted">
-                Nos ultimos dados analisados, o contrato consumiu{" "}
-                {formatNumber(diagnosis.hours, 1)} horas, teve {diagnosis.urgentCount}
-                {" "}urgencias e {diagnosis.reworkCount} retrabalhos.
-              </p>
-              <p className="muted">
-                Para manter atendimento sem queimar margem, o valor de referencia
-                para renovacao fica em {formatCurrency(diagnosis.suggestedPrice)}.
-              </p>
-              <p className="muted">
-                Principal vazamento: <strong>{mainLeak.label}</strong>, com{" "}
-                {formatCurrency(mainLeak.value)}.
-              </p>
-              <div className="actions no-print">
-                <CopyButton text={conversationText} />
               </div>
             </aside>
           </div>

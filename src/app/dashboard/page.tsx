@@ -107,13 +107,14 @@ export default async function DashboardPage({
                   <th>Caos</th>
                   <th>Preco sugerido</th>
                   <th>Motivo</th>
+                  <th>Relatorio</th>
                 </tr>
               </thead>
               <tbody>
                 {diagnoses.map((diagnosis) => (
                   <tr key={diagnosis.clientId}>
                     <td>
-                      <Link href={`/dashboard/clients/${diagnosis.clientId}`}>
+                      <Link href={`/dashboard/clients/${diagnosis.clientId}?period=${activePeriod}`}>
                         <strong>{diagnosis.clientName}</strong>
                       </Link>
                     </td>
@@ -126,6 +127,11 @@ export default async function DashboardPage({
                     <td>{formatNumber(diagnosis.chaosScore)}/100</td>
                     <td>{formatCurrency(diagnosis.suggestedPrice)}</td>
                     <td>{diagnosis.reason}</td>
+                    <td>
+                      <Link className="table-link" href={`/dashboard/clients/${diagnosis.clientId}/report?period=${activePeriod}`}>
+                        Abrir
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

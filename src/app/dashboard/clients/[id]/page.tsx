@@ -9,19 +9,27 @@ import { calculateClientDiagnosis } from "@/lib/calculations";
 import { getDashboardData } from "@/lib/data";
 import { getMainLeak } from "@/lib/diagnosis-insights";
 import { formatCurrency, formatNumber, formatPercent } from "@/lib/format";
+import { filterEntriesByPeriod, normalizePeriod, periodLabel } from "@/lib/periods";
 
 export default async function ClientDetailPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ period?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, { period: periodParam }] = await Promise.all([params, searchParams]);
+  const activePeriod = normalizePeriod(periodParam);
+  const activePeriodLabel = periodLabel(activePeriod);
   const { organization, clients, entries } = await getDashboardData();
   const client = clients.find((item) => item.id === id);
 
   if (!client) notFound();
 
-  const clientEntries = entries.filter((entry) => entry.client_id === client.id);
+  const clientEntries = filterEntriesByPeriod(
+    entries.filter((entry) => entry.client_id === client.id),
+    activePeriod
+  );
   const diagnosis = calculateClientDiagnosis(client, clientEntries, {
     hourlyCost: organization.hourly_cost,
     targetMargin: organization.target_margin,
@@ -42,20 +50,22 @@ export default async function ClientDetailPage({
       <div className="topbar">
         <div className="page-title">
           <h1>{client.name}</h1>
-          <p>{diagnosis.reason}</p>
+          <p>
+            {diagnosis.reason} Periodo: {activePeriodLabel.toLowerCase()}.
+          </p>
         </div>
         <div className="actions" style={{ marginTop: 0 }}>
-          <Link className="button-secondary" href="/dashboard/clients">
+          <Link className="button-secondary" href={`/dashboard?period=${activePeriod}`}>
             Voltar
           </Link>
-          <Link className="button" href={`/dashboard/clients/${client.id}/report`}>
-            Relatorio
+          <Link className="button" href={`/dashboard/clients/${client.id}/report?period=${activePeriod}`}>
+            Relatorio de decisao
           </Link>
         </div>
       </div>
 
       <section className="dashboard-grid">
-        <MetricCard label="Receita" value={formatCurrency(diagnosis.revenue)} hint="Valor analisado no periodo." />
+        <MetricCard label="Receita" value={formatCurrency(diagnosis.revenue)} hint={`Valor analisado: ${activePeriodLabel}.`} />
         <MetricCard label="Lucro estimado" value={formatCurrency(diagnosis.profit)} hint="Receita menos custo operacional." />
         <MetricCard label="Margem" value={formatPercent(diagnosis.margin)} hint="Comparada com a meta da empresa." />
         <MetricCard label="Caos" value={`${formatNumber(diagnosis.chaosScore)}/100`} hint="Urgencia, retrabalho e atraso." />
