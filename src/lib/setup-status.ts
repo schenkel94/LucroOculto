@@ -114,8 +114,16 @@ function maskUrl(value: string) {
 }
 
 function normalizeSupabaseError(message: string) {
+  if (!message.trim()) {
+    return "Tabela existe, mas faltam colunas novas. Rode o conteudo completo de supabase/schema.sql.";
+  }
+
   if (message.includes("does not exist")) {
     return "Nao encontrei esta tabela. Rode o conteudo de supabase/schema.sql no SQL Editor.";
+  }
+
+  if (message.includes("column") || message.includes("Could not find")) {
+    return "Encontrei a tabela, mas faltam colunas novas. Rode o conteudo completo de supabase/schema.sql.";
   }
 
   if (message.includes("Invalid API key")) {
