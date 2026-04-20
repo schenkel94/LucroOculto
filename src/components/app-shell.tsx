@@ -26,7 +26,8 @@ export function AppShell({
           <Link href="/dashboard/clients">Clientes</Link>
           <Link href="/dashboard/settings">Ajustes</Link>
           <Link href="/setup">Setup</Link>
-          <Link href="/admin">Admin beta</Link>
+          <Link href="/launch">Lancamento</Link>
+          <Link href="/admin">Planos</Link>
           <form action={signOut}>
             <button type="submit">Sair</button>
           </form>

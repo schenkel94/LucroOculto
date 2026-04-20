@@ -107,12 +107,12 @@ export default function HomePage() {
 
             <aside className="panel">
               <p className="eyebrow" style={{ color: "var(--green)" }}>
-                Comeco enxuto
+                Beta pago aberto
               </p>
-              <h3 style={{ marginTop: 0 }}>Sem API externa. Sem ERP. Sem novela.</h3>
+              <h3 style={{ marginTop: 0 }}>R$ 97/mes para decidir com margem real.</h3>
               <p className="muted">
-                Cadastro manual e CSV entram primeiro. Integracao so vale depois
-                que a margem aparecer com clareza.
+                Sem API externa. Sem ERP. Sem novela. CSV e cadastro manual
+                bastam para achar a conversa de reajuste desta semana.
               </p>
               <div className="actions">
                 <Link className="button-secondary" href="/login">
@@ -137,6 +137,24 @@ export default function HomePage() {
               <h3>Cortar escopo</h3>
               <p className="muted">Cliente que consome time demais para o retorno que entrega.</p>
             </div>
+          </div>
+        </section>
+
+        <section className="section white">
+          <div className="section-inner launch-band">
+            <div>
+              <p className="eyebrow" style={{ color: "var(--green)" }}>
+                Lancamento fundador
+              </p>
+              <h2>Primeiros usuarios entram para provar caixa, nao para brincar de dashboard.</h2>
+              <p className="muted">
+                O teste bom e simples: importar uma planilha, abrir o pior cliente
+                e sair com uma frase de decisao comercial.
+              </p>
+            </div>
+            <Link className="button" href="/login">
+              Entrar no beta
+            </Link>
           </div>
         </section>
       </main>

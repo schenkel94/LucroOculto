@@ -64,3 +64,19 @@ Essa rota checa se as variaveis publicas existem e se o schema do Supabase foi a
 ## Segredos
 
 Arquivos `.env*.local`, `.vercel` e `config/users.local.json` ficam fora do Git. Nunca commite senhas, service keys ou chaves secretas.
+
+## Lancamento beta
+
+Antes de chamar clientes reais, abra `/launch` logado e feche o checklist:
+
+- `/setup` verde com schema completo do Supabase.
+- Pelo menos 3 clientes e alguns lancamentos reais ou demo.
+- Um relatorio de cliente ruim pronto para mostrar.
+- Plano beta liberado manualmente no Supabase apos pagamento.
+
+Seguranca aplicada no app:
+
+- Headers HTTP em `next.config.ts`.
+- CSP com conexao permitida para Supabase.
+- Bloqueio de probes comuns e do header `x-middleware-subrequest` em `src/proxy.ts`.
+- RLS no Supabase e liberacao de plano fora do alcance do usuario autenticado.

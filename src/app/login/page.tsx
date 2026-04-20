@@ -20,7 +20,8 @@ export default async function LoginPage({
         <div className="auth-box">
           <h1>Entrar</h1>
           <p className="muted">
-            Acesse o diagnostico de margem com email e senha.
+            Acesse o diagnostico de margem com email e senha. Plano Free valida
+            com 3 clientes; beta pago libera a operacao comercial.
           </p>
 
           {params.message ? <p className="message">{params.message}</p> : null}

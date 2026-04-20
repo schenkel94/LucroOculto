@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { CopyButton } from "@/components/copy-button";
 import { BetaRequestForm } from "@/components/forms";
 import { getBillingEvents, getDashboardData } from "@/lib/data";
 import { formatCurrency, formatNumber } from "@/lib/format";
@@ -143,6 +144,9 @@ where id = '${organization.id}';`;
               Editor do Supabase.
             </p>
             <pre className="sql-box">{activationSql}</pre>
+            <div className="actions">
+              <CopyButton label="Copiar SQL" text={activationSql} />
+            </div>
             <p className="muted">
               A app nao permite update desses campos pelo usuario autenticado.
               Essa liberacao fica no operador fundador por enquanto.
